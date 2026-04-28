@@ -2,11 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Prevents iPhone Safari double-tap zoom on the dial pad -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <title>Hospital Phonebook</title>
 
   <style>
+    html, body, button {
+      touch-action: manipulation;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
     body {
       font-family: Arial, sans-serif;
       max-width: 520px;
@@ -223,7 +234,7 @@
 
     <div id="resultBox" class="hidden">
       <div id="matchedName" class="match-name"></div>
-      <div class="label">Number being called</div>
+      <div class="label">Dialing</div>
       <div id="fullNumberDisplay" class="number-display"></div>
     </div>
 
@@ -238,24 +249,13 @@
     <h2>Add / Edit Entry</h2>
 
     <label class="label">Name or unit</label>
-    <input
-      id="entryName"
-      placeholder="e.g. SICU Charge"
-    />
+    <input id="entryName" placeholder="e.g. SICU Charge" />
 
     <label class="label">5-digit extension</label>
-    <input
-      id="entryExtension"
-      maxlength="5"
-      inputmode="numeric"
-      placeholder="e.g. 65186"
-    />
+    <input id="entryExtension" maxlength="5" inputmode="numeric" placeholder="e.g. 65186" />
 
     <label class="label">Full number, optional</label>
-    <input
-      id="entryNumber"
-      placeholder="e.g. 312-555-5186"
-    />
+    <input id="entryNumber" placeholder="e.g. +13129265186" />
 
     <button onclick="saveDirectoryEntry()">Save Directory Entry</button>
 
@@ -279,10 +279,8 @@
 
     localStorage.removeItem("phoneDirectory");
 
-    const DEFAULT_PREFIX = "312-555";
-
-    const DIRECTORY_STORAGE_KEY = "hospitalPhoneDirectoryV5";
-    const CORRECTIONS_STORAGE_KEY = "hospitalPhoneCorrectionsV5";
+    const DIRECTORY_STORAGE_KEY = "hospitalPhoneDirectoryV6";
+    const CORRECTIONS_STORAGE_KEY = "hospitalPhoneCorrectionsV6";
 
     const startingDirectory = [
       {name:"OR Control", extension:"65150", fullNumber:""},
@@ -454,16 +452,34 @@
     }
 
     function cleanPhoneNumber(number) {
-      return String(number).replace(/[^0-9]/g, "");
+      return String(number).replace(/[^0-9+]/g, "");
     }
 
     function isValidExtension(extension) {
       return /^\d{5}$/.test(extension);
     }
 
+    /*
+      This is the important routing logic from the reference app.
+
+      6xxxx -> +131292xxxxx
+      2xxxx -> +131247xxxxx
+      everything else -> +131269xxxxx
+    */
+    function makePhone(extension) {
+      if (extension.charAt(0) === "6") {
+        return "+131292" + extension;
+      }
+
+      if (extension.charAt(0) === "2") {
+        return "+131247" + extension;
+      }
+
+      return "+131269" + extension;
+    }
+
     function formatDefaultNumber(extension) {
-      const lastFour = extension.slice(-4);
-      return DEFAULT_PREFIX + "-" + lastFour;
+      return makePhone(extension);
     }
 
     function findDirectoryMatches(extension) {
@@ -542,15 +558,6 @@
 
       document.getElementById("fullNumberDisplay").textContent = currentNumber;
       document.getElementById("resultBox").classList.remove("hidden");
-
-      callNumber(cleanPhoneNumber(currentNumber));
-    }
-
-    function callCurrentNumber() {
-      if (!currentNumber) {
-        alert("Please look up a number first.");
-        return;
-      }
 
       callNumber(cleanPhoneNumber(currentNumber));
     }
@@ -706,7 +713,7 @@
             "<div class='contact-info'>" +
               "<strong>" + item.name + "</strong><br>" +
               "Extension: " + item.extension + "<br>" +
-              "Suggested number: <a class='phone-link' href='tel:" + cleanNumber + "'>" + finalNumber + "</a>" +
+              "Dial: <a class='phone-link' href='tel:" + cleanNumber + "'>" + finalNumber + "</a>" +
             "</div>" +
             "<button class='menu-button' onclick='toggleContactMenu(" + index + ")'>⋮</button>" +
           "</div>" +
