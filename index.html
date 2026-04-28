@@ -2,8 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
-  <!-- Prevents iPhone Safari double-tap zoom on the dial pad -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
   <title>Hospital Phonebook</title>
@@ -72,16 +70,6 @@
       background: #555;
     }
 
-    button.danger {
-      background: #b00020;
-    }
-
-    button.small {
-      font-size: 14px;
-      padding: 8px;
-      margin-top: 6px;
-    }
-
     .button-row {
       display: flex;
       gap: 8px;
@@ -89,25 +77,6 @@
 
     .button-row button {
       flex: 1;
-    }
-
-    .number-display {
-      font-size: 28px;
-      text-align: center;
-      font-weight: bold;
-      margin: 12px 0;
-      word-break: break-word;
-    }
-
-    .directory-item {
-      border-top: 1px solid #eee;
-      padding: 12px 0;
-    }
-
-    .label {
-      font-size: 14px;
-      color: #666;
-      margin-top: 8px;
     }
 
     .hidden {
@@ -127,42 +96,12 @@
       margin-top: 6px;
     }
 
-    .contact-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .contact-info {
-      flex: 1;
-      line-height: 1.35;
-    }
-
-    .menu-button {
-      width: 44px;
-      min-width: 44px;
-      height: 44px;
-      padding: 0;
-      margin-top: 0;
-      border-radius: 50%;
-      background: #555;
-      font-size: 24px;
-      line-height: 1;
-    }
-
-    .contact-menu {
-      margin-top: 10px;
-    }
-
-    .phone-link {
-      color: #0b66c3;
+    .number-display {
+      font-size: 28px;
+      text-align: center;
       font-weight: bold;
-      text-decoration: none;
-    }
-
-    .phone-link:active {
-      opacity: 0.7;
+      margin: 12px 0;
+      word-break: break-word;
     }
 
     .dialer-display {
@@ -192,6 +131,22 @@
       background: #0a7f28;
       font-size: 24px;
       margin-top: 14px;
+    }
+
+    .directory-item {
+      border-top: 1px solid #eee;
+      padding: 12px 0;
+      line-height: 1.35;
+    }
+
+    .phone-link {
+      color: #0b66c3;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .phone-link:active {
+      opacity: 0.7;
     }
   </style>
 </head>
@@ -234,34 +189,14 @@
 
     <div id="resultBox" class="hidden">
       <div id="matchedName" class="match-name"></div>
-      <div class="label">Dialing</div>
-      <div id="fullNumberDisplay" class="number-display"></div>
+      <div class="number-display" id="fullNumberDisplay"></div>
     </div>
 
-    <p class="note">
-      Enter exactly 5 digits. Press Call to dial directly.
-    </p>
+    <p class="note">Enter exactly 5 digits. Press Call to dial directly.</p>
   </div>
 
   <div id="phoneBookCard" class="card hidden">
     <h2>Phone Book</h2>
-
-    <h2>Add / Edit Entry</h2>
-
-    <label class="label">Name or unit</label>
-    <input id="entryName" placeholder="e.g. SICU Charge" />
-
-    <label class="label">5-digit extension</label>
-    <input id="entryExtension" maxlength="5" inputmode="numeric" placeholder="e.g. 65186" />
-
-    <label class="label">Full number, optional</label>
-    <input id="entryNumber" placeholder="e.g. +13129265186" />
-
-    <button onclick="saveDirectoryEntry()">Save Directory Entry</button>
-
-    <hr />
-
-    <h2>Search Directory</h2>
 
     <input
       id="searchInput"
@@ -273,199 +208,163 @@
   </div>
 
   <script>
-    let currentExtension = "";
-    let currentNumber = "";
     let dialedExtension = "";
+    let currentNumber = "";
 
-    localStorage.removeItem("phoneDirectory");
-
-    const DIRECTORY_STORAGE_KEY = "hospitalPhoneDirectoryV6";
-    const CORRECTIONS_STORAGE_KEY = "hospitalPhoneCorrectionsV6";
-
-    const startingDirectory = [
-      {name:"OR Control", extension:"65150", fullNumber:""},
-      {name:"SICU", extension:"59930", fullNumber:""},
-      {name:"Deborah Dickens - ENT Coordinator", extension:"28382", fullNumber:""},
-      {name:"Deborah Dickens - Direct Line", extension:"62080", fullNumber:""},
-      {name:"Feinberg OR 1", extension:"65024", fullNumber:""},
-      {name:"Feinberg OR 2", extension:"66394", fullNumber:""},
-      {name:"Feinberg OR 3", extension:"64179", fullNumber:""},
-      {name:"Feinberg OR 4", extension:"64229", fullNumber:""},
-      {name:"Feinberg OR 5", extension:"64239", fullNumber:""},
-      {name:"Feinberg OR 6", extension:"60526", fullNumber:""},
-      {name:"Feinberg OR 7", extension:"61779", fullNumber:""},
-      {name:"Feinberg OR 8", extension:"61889", fullNumber:""},
-      {name:"Feinberg OR 9", extension:"62209", fullNumber:""},
-      {name:"Feinberg OR 10", extension:"60218", fullNumber:""},
-      {name:"Feinberg OR 11", extension:"63819", fullNumber:""},
-      {name:"Feinberg OR 12", extension:"62124", fullNumber:""},
-      {name:"Feinberg OR 14", extension:"63726", fullNumber:""},
-      {name:"Feinberg OR 15", extension:"61588", fullNumber:""},
-      {name:"Feinberg OR 16", extension:"63930", fullNumber:""},
-      {name:"Feinberg OR 17", extension:"61732", fullNumber:""},
-      {name:"Feinberg OR 18", extension:"67265", fullNumber:""},
-      {name:"Feinberg OR 19", extension:"67266", fullNumber:""},
-      {name:"Feinberg OR 20", extension:"67267", fullNumber:""},
-      {name:"Feinberg OR 21", extension:"67268", fullNumber:""},
-      {name:"Feinberg OR 22", extension:"67321", fullNumber:""},
-      {name:"Feinberg OR 23", extension:"67323", fullNumber:""},
-      {name:"Feinberg OR 24", extension:"64930", fullNumber:""},
-      {name:"Feinberg OR 25", extension:"64931", fullNumber:""},
-      {name:"Feinberg OR 26", extension:"64998", fullNumber:""},
-      {name:"Feinberg OR 27", extension:"64991", fullNumber:""},
-      {name:"Feinberg OR 30", extension:"60891", fullNumber:""},
-      {name:"Feinberg OR 31", extension:"60894", fullNumber:""},
-      {name:"Feinberg OR 32", extension:"63555", fullNumber:""},
-      {name:"Feinberg OR 33", extension:"63660", fullNumber:""},
-      {name:"Feinberg OR 34", extension:"64155", fullNumber:""},
-      {name:"Feinberg OR 35", extension:"64261", fullNumber:""},
-      {name:"Feinberg OR 36", extension:"67586", fullNumber:""},
-      {name:"Feinberg Procedure Room 2", extension:"68237", fullNumber:""},
-      {name:"Lavin OR 1", extension:"25801", fullNumber:""},
-      {name:"Lavin OR 2", extension:"25802", fullNumber:""},
-      {name:"Lavin OR 3", extension:"25803", fullNumber:""},
-      {name:"Lavin OR 4", extension:"25804", fullNumber:""},
-      {name:"Lavin OR 5", extension:"25805", fullNumber:""},
-      {name:"Lavin OR 6", extension:"25806", fullNumber:""},
-      {name:"Lavin OR 7", extension:"25807", fullNumber:""},
-      {name:"Lavin OR 8", extension:"25808", fullNumber:""},
-      {name:"Admitting", extension:"62074", fullNumber:""},
-      {name:"Equipment", extension:"28388", fullNumber:""},
-      {name:"OR Anesthesia", extension:"69036", fullNumber:""},
-      {name:"Rhinology Clinic", extension:"50344", fullNumber:""},
-      {name:"Rhinology Clinic", extension:"50366", fullNumber:""},
-      {name:"Rhinology Clinic", extension:"50412", fullNumber:""},
-      {name:"Audio - Angela", extension:"54923", fullNumber:""},
-      {name:"CTICU", extension:"65123", fullNumber:""},
-      {name:"CCU", extension:"65172", fullNumber:""},
-      {name:"SICU", extension:"65186", fullNumber:""},
-      {name:"MICU Northeast", extension:"60618", fullNumber:""},
-      {name:"MICU Nursing Station", extension:"65140", fullNumber:""},
-      {name:"MICU Northwest", extension:"60611", fullNumber:""},
-      {name:"MICU Southwest", extension:"65169", fullNumber:""},
-      {name:"Tania Coyoo", extension:"23800", fullNumber:""},
-      {name:"Feinberg 10 Northeast Nursing Station", extension:"65503", fullNumber:""},
-      {name:"Feinberg 10 Southeast Nursing Station", extension:"63095", fullNumber:""},
-      {name:"Feinberg 10 Northwest Nursing Station", extension:"62348", fullNumber:""},
-      {name:"Feinberg 10 Southwest Nursing Station", extension:"63439", fullNumber:""},
-      {name:"Feinberg 11 East Nursing Station", extension:"62853", fullNumber:""},
-      {name:"Feinberg 11 West Nursing Station", extension:"62350", fullNumber:""},
-      {name:"Feinberg 12 East Nursing Station", extension:"62886", fullNumber:""},
-      {name:"Feinberg 12 West Nursing Station", extension:"66538", fullNumber:""},
-      {name:"Feinberg 13 East Nursing Station", extension:"62356", fullNumber:""},
-      {name:"Feinberg 13 West Nursing Station", extension:"62381", fullNumber:""},
-      {name:"Feinberg 14 East Nursing Station", extension:"62365", fullNumber:""},
-      {name:"Feinberg 14 West Nursing Station", extension:"62368", fullNumber:""},
-      {name:"Feinberg 15 East Nursing Station", extension:"62362", fullNumber:""},
-      {name:"Feinberg 15 West Nursing Station", extension:"63099", fullNumber:""},
-      {name:"Feinberg 16 East Nursing Station", extension:"66731", fullNumber:""},
-      {name:"Feinberg 16 West Nursing Station", extension:"62358", fullNumber:""},
-      {name:"SICU Resident Room", extension:"60324", fullNumber:""},
-      {name:"SICU Charge", extension:"65186", fullNumber:""},
-      {name:"Same-Day Surgery", extension:"65450", fullNumber:""},
-      {name:"ENT Resident Room - 12E Feinberg", extension:"64646", fullNumber:""},
-      {name:"PTC", extension:"67647", fullNumber:""},
-      {name:"ENT CT Reading Room", extension:"62042", fullNumber:""},
-      {name:"External Transfer", extension:"63321", fullNumber:""},
-      {name:"ENT Clinic", extension:"51590", fullNumber:""},
-      {name:"ENT Clinic", extension:"54035", fullNumber:""},
-      {name:"Emergency Department", extension:"66222", fullNumber:""},
-      {name:"Emergency Department Mezzanine", extension:"64881", fullNumber:""},
-      {name:"Blood Bank", extension:"62513", fullNumber:""},
-      {name:"Chemistry Lab", extension:"67536", fullNumber:""},
-      {name:"Hemostasis Lab", extension:"62428", fullNumber:""},
-      {name:"Microbiology Lab", extension:"63202", fullNumber:""},
-      {name:"Specimen Receiving", extension:"67970", fullNumber:""},
-      {name:"Emergency Department Reading Room", extension:"67038", fullNumber:""},
-      {name:"Emergency Department Reading Room", extension:"62776", fullNumber:""},
-      {name:"OR Scheduling - Same Day Addons", extension:"62700", fullNumber:""},
-      {name:"CT", extension:"65309", fullNumber:""},
-      {name:"CT Reading Room", extension:"65894", fullNumber:""},
-      {name:"MRI", extension:"64333", fullNumber:""},
-      {name:"MRI Reading Room", extension:"61810", fullNumber:""},
-      {name:"Ultrasound", extension:"67032", fullNumber:""},
-      {name:"Ultrasound Reading", extension:"67032", fullNumber:""},
-      {name:"Nuclear Medicine", extension:"62320", fullNumber:""},
-      {name:"Neuro Reading Room", extension:"64407", fullNumber:""},
-      {name:"Xray/General Radiology", extension:"64682", fullNumber:""},
-      {name:"Xray Stat", extension:"65105", fullNumber:""},
-      {name:"GI/Fluoro", extension:"62496", fullNumber:""},
-      {name:"IR", extension:"65200", fullNumber:""},
-      {name:"Vascular Lab", extension:"65809", fullNumber:""},
-      {name:"Cardiac Echo", extension:"62629", fullNumber:""},
-      {name:"File Room", extension:"65100", fullNumber:""},
-      {name:"Prentice OR", extension:"20600", fullNumber:""},
-      {name:"PACU", extension:"65161", fullNumber:""},
-      {name:"OR Scheduling", extension:"67000", fullNumber:""},
-      {name:"OR Charge Nurse", extension:"65729", fullNumber:""},
-      {name:"TPN Pharmacist", extension:"69680", fullNumber:""},
-      {name:"9th Floor Pharmacy", extension:"65147", fullNumber:""},
-      {name:"7th Floor Pharmacy", extension:"64003", fullNumber:""},
-      {name:"Night Pharmacy", extension:"74570", fullNumber:""},
-      {name:"General Surgery Library", extension:"63306", fullNumber:""},
-      {name:"General Surgery Library", extension:"62683", fullNumber:""},
-      {name:"Lavin PACU", extension:"25048", fullNumber:""},
-      {name:"Jennifer Malloy", extension:"53204", fullNumber:""},
-      {name:"Frederick Mone", extension:"50805", fullNumber:""},
-      {name:"Mel Merced 12E Social Work", extension:"68092", fullNumber:""},
-      {name:"Lavin 11 OR", extension:"25776", fullNumber:""},
-      {name:"SROU", extension:"60383", fullNumber:""},
-      {name:"Lavin 11 Charge", extension:"25044", fullNumber:""},
-      {name:"Inpatient Preop", extension:"68873", fullNumber:""},
-      {name:"Inpatient Transport", extension:"62170", fullNumber:""},
-      {name:"Chest Reading Room", extension:"25299", fullNumber:""},
-      {name:"Liz Stanton", extension:"50412", fullNumber:""},
-      {name:"Galter 12 Nursing Station", extension:"62350", fullNumber:""},
-      {name:"Galter 11 Nursing Station", extension:"42700", fullNumber:""},
-      {name:"Prentice 6 PACU", extension:"20610", fullNumber:""},
-      {name:"Lavin Preop", extension:"25044", fullNumber:""},
-      {name:"ENT OR Scheduling", extension:"55585", fullNumber:""},
-      {name:"Pathology", extension:"63211", fullNumber:""},
-      {name:"Kailani", extension:"68805", fullNumber:""},
-      {name:"SICU Charge", extension:"62809", fullNumber:""},
-      {name:"ENT Reading Room", extension:"62042", fullNumber:""},
-      {name:"CT", extension:"65314", fullNumber:""},
-      {name:"NSICU", extension:"60661", fullNumber:""}
+    const directory = [
+      {name:"OR Control", extension:"65150"},
+      {name:"SICU", extension:"59930"},
+      {name:"Deborah Dickens - ENT Coordinator", extension:"28382"},
+      {name:"Deborah Dickens - Direct Line", extension:"62080"},
+      {name:"Feinberg OR 1", extension:"65024"},
+      {name:"Feinberg OR 2", extension:"66394"},
+      {name:"Feinberg OR 3", extension:"64179"},
+      {name:"Feinberg OR 4", extension:"64229"},
+      {name:"Feinberg OR 5", extension:"64239"},
+      {name:"Feinberg OR 6", extension:"60526"},
+      {name:"Feinberg OR 7", extension:"61779"},
+      {name:"Feinberg OR 8", extension:"61889"},
+      {name:"Feinberg OR 9", extension:"62209"},
+      {name:"Feinberg OR 10", extension:"60218"},
+      {name:"Feinberg OR 11", extension:"63819"},
+      {name:"Feinberg OR 12", extension:"62124"},
+      {name:"Feinberg OR 14", extension:"63726"},
+      {name:"Feinberg OR 15", extension:"61588"},
+      {name:"Feinberg OR 16", extension:"63930"},
+      {name:"Feinberg OR 17", extension:"61732"},
+      {name:"Feinberg OR 18", extension:"67265"},
+      {name:"Feinberg OR 19", extension:"67266"},
+      {name:"Feinberg OR 20", extension:"67267"},
+      {name:"Feinberg OR 21", extension:"67268"},
+      {name:"Feinberg OR 22", extension:"67321"},
+      {name:"Feinberg OR 23", extension:"67323"},
+      {name:"Feinberg OR 24", extension:"64930"},
+      {name:"Feinberg OR 25", extension:"64931"},
+      {name:"Feinberg OR 26", extension:"64998"},
+      {name:"Feinberg OR 27", extension:"64991"},
+      {name:"Feinberg OR 30", extension:"60891"},
+      {name:"Feinberg OR 31", extension:"60894"},
+      {name:"Feinberg OR 32", extension:"63555"},
+      {name:"Feinberg OR 33", extension:"63660"},
+      {name:"Feinberg OR 34", extension:"64155"},
+      {name:"Feinberg OR 35", extension:"64261"},
+      {name:"Feinberg OR 36", extension:"67586"},
+      {name:"Feinberg Procedure Room 2", extension:"68237"},
+      {name:"Lavin OR 1", extension:"25801"},
+      {name:"Lavin OR 2", extension:"25802"},
+      {name:"Lavin OR 3", extension:"25803"},
+      {name:"Lavin OR 4", extension:"25804"},
+      {name:"Lavin OR 5", extension:"25805"},
+      {name:"Lavin OR 6", extension:"25806"},
+      {name:"Lavin OR 7", extension:"25807"},
+      {name:"Lavin OR 8", extension:"25808"},
+      {name:"Admitting", extension:"62074"},
+      {name:"Equipment", extension:"28388"},
+      {name:"OR Anesthesia", extension:"69036"},
+      {name:"Rhinology Clinic", extension:"50344"},
+      {name:"Rhinology Clinic", extension:"50366"},
+      {name:"Rhinology Clinic", extension:"50412"},
+      {name:"Audio - Angela", extension:"54923"},
+      {name:"CTICU", extension:"65123"},
+      {name:"CCU", extension:"65172"},
+      {name:"SICU", extension:"65186"},
+      {name:"MICU Northeast", extension:"60618"},
+      {name:"MICU Nursing Station", extension:"65140"},
+      {name:"MICU Northwest", extension:"60611"},
+      {name:"MICU Southwest", extension:"65169"},
+      {name:"Tania Coyoo", extension:"23800"},
+      {name:"Feinberg 10 Northeast Nursing Station", extension:"65503"},
+      {name:"Feinberg 10 Southeast Nursing Station", extension:"63095"},
+      {name:"Feinberg 10 Northwest Nursing Station", extension:"62348"},
+      {name:"Feinberg 10 Southwest Nursing Station", extension:"63439"},
+      {name:"Feinberg 11 East Nursing Station", extension:"62853"},
+      {name:"Feinberg 11 West Nursing Station", extension:"62350"},
+      {name:"Feinberg 12 East Nursing Station", extension:"62886"},
+      {name:"Feinberg 12 West Nursing Station", extension:"66538"},
+      {name:"Feinberg 13 East Nursing Station", extension:"62356"},
+      {name:"Feinberg 13 West Nursing Station", extension:"62381"},
+      {name:"Feinberg 14 East Nursing Station", extension:"62365"},
+      {name:"Feinberg 14 West Nursing Station", extension:"62368"},
+      {name:"Feinberg 15 East Nursing Station", extension:"62362"},
+      {name:"Feinberg 15 West Nursing Station", extension:"63099"},
+      {name:"Feinberg 16 East Nursing Station", extension:"66731"},
+      {name:"Feinberg 16 West Nursing Station", extension:"62358"},
+      {name:"SICU Resident Room", extension:"60324"},
+      {name:"SICU Charge", extension:"65186"},
+      {name:"Same-Day Surgery", extension:"65450"},
+      {name:"ENT Resident Room - 12E Feinberg", extension:"64646"},
+      {name:"PTC", extension:"67647"},
+      {name:"ENT CT Reading Room", extension:"62042"},
+      {name:"External Transfer", extension:"63321"},
+      {name:"ENT Clinic", extension:"51590"},
+      {name:"ENT Clinic", extension:"54035"},
+      {name:"Emergency Department", extension:"66222"},
+      {name:"Emergency Department Mezzanine", extension:"64881"},
+      {name:"Blood Bank", extension:"62513"},
+      {name:"Chemistry Lab", extension:"67536"},
+      {name:"Hemostasis Lab", extension:"62428"},
+      {name:"Microbiology Lab", extension:"63202"},
+      {name:"Specimen Receiving", extension:"67970"},
+      {name:"Emergency Department Reading Room", extension:"67038"},
+      {name:"Emergency Department Reading Room", extension:"62776"},
+      {name:"OR Scheduling - Same Day Addons", extension:"62700"},
+      {name:"CT", extension:"65309"},
+      {name:"CT Reading Room", extension:"65894"},
+      {name:"MRI", extension:"64333"},
+      {name:"MRI Reading Room", extension:"61810"},
+      {name:"Ultrasound", extension:"67032"},
+      {name:"Ultrasound Reading", extension:"67032"},
+      {name:"Nuclear Medicine", extension:"62320"},
+      {name:"Neuro Reading Room", extension:"64407"},
+      {name:"Xray/General Radiology", extension:"64682"},
+      {name:"Xray Stat", extension:"65105"},
+      {name:"GI/Fluoro", extension:"62496"},
+      {name:"IR", extension:"65200"},
+      {name:"Vascular Lab", extension:"65809"},
+      {name:"Cardiac Echo", extension:"62629"},
+      {name:"File Room", extension:"65100"},
+      {name:"Prentice OR", extension:"20600"},
+      {name:"PACU", extension:"65161"},
+      {name:"OR Scheduling", extension:"67000"},
+      {name:"OR Charge Nurse", extension:"65729"},
+      {name:"TPN Pharmacist", extension:"69680"},
+      {name:"9th Floor Pharmacy", extension:"65147"},
+      {name:"7th Floor Pharmacy", extension:"64003"},
+      {name:"Night Pharmacy", extension:"74570"},
+      {name:"General Surgery Library", extension:"63306"},
+      {name:"General Surgery Library", extension:"62683"},
+      {name:"Lavin PACU", extension:"25048"},
+      {name:"Jennifer Malloy", extension:"53204"},
+      {name:"Frederick Mone", extension:"50805"},
+      {name:"Mel Merced 12E Social Work", extension:"68092"},
+      {name:"Lavin 11 OR", extension:"25776"},
+      {name:"SROU", extension:"60383"},
+      {name:"Lavin 11 Charge", extension:"25044"},
+      {name:"Inpatient Preop", extension:"68873"},
+      {name:"Inpatient Transport", extension:"62170"},
+      {name:"Chest Reading Room", extension:"25299"},
+      {name:"Liz Stanton", extension:"50412"},
+      {name:"Galter 12 Nursing Station", extension:"62350"},
+      {name:"Galter 11 Nursing Station", extension:"42700"},
+      {name:"Prentice 6 PACU", extension:"20610"},
+      {name:"Lavin Preop", extension:"25044"},
+      {name:"ENT OR Scheduling", extension:"55585"},
+      {name:"Pathology", extension:"63211"},
+      {name:"Kailani", extension:"68805"},
+      {name:"SICU Charge", extension:"62809"},
+      {name:"ENT Reading Room", extension:"62042"},
+      {name:"CT", extension:"65314"},
+      {name:"NSICU", extension:"60661"}
     ];
 
-    function getCorrections() {
-      return JSON.parse(localStorage.getItem(CORRECTIONS_STORAGE_KEY) || "{}");
-    }
-
-    function setCorrections(corrections) {
-      localStorage.setItem(CORRECTIONS_STORAGE_KEY, JSON.stringify(corrections));
-    }
-
-    function getDirectory() {
-      const saved = localStorage.getItem(DIRECTORY_STORAGE_KEY);
-
-      if (saved) {
-        return JSON.parse(saved);
-      }
-
-      localStorage.setItem(DIRECTORY_STORAGE_KEY, JSON.stringify(startingDirectory));
-      return startingDirectory;
-    }
-
-    function setDirectory(directory) {
-      localStorage.setItem(DIRECTORY_STORAGE_KEY, JSON.stringify(directory));
+    function isValidExtension(extension) {
+      return /^\d{5}$/.test(extension);
     }
 
     function cleanPhoneNumber(number) {
       return String(number).replace(/[^0-9+]/g, "");
     }
 
-    function isValidExtension(extension) {
-      return /^\d{5}$/.test(extension);
-    }
-
-    /*
-      This is the important routing logic from the reference app.
-
-      6xxxx -> +131292xxxxx
-      2xxxx -> +131247xxxxx
-      everything else -> +131269xxxxx
-    */
     function makePhone(extension) {
       if (extension.charAt(0) === "6") {
         return "+131292" + extension;
@@ -478,38 +377,15 @@
       return "+131269" + extension;
     }
 
-    function formatDefaultNumber(extension) {
-      return makePhone(extension);
-    }
-
     function findDirectoryMatches(extension) {
-      const directory = getDirectory();
-
       return directory.filter(function(item) {
         return item.extension === extension;
       });
     }
 
-    function getFullNumber(extension) {
-      const corrections = getCorrections();
-
-      if (corrections[extension]) {
-        return corrections[extension];
-      }
-
-      const matches = findDirectoryMatches(extension);
-
-      if (matches.length > 0 && matches[0].fullNumber) {
-        return matches[0].fullNumber;
-      }
-
-      return formatDefaultNumber(extension);
-    }
-
     function updateDialerDisplay() {
       const display = document.getElementById("dialerDisplay");
-      const padded = dialedExtension.padEnd(5, "_");
-      display.textContent = padded;
+      display.textContent = dialedExtension.padEnd(5, "_");
     }
 
     function addDigit(digit) {
@@ -528,11 +404,8 @@
 
     function clearDialer() {
       dialedExtension = "";
-      currentExtension = "";
       currentNumber = "";
-
       updateDialerDisplay();
-
       document.getElementById("resultBox").classList.add("hidden");
     }
 
@@ -542,195 +415,66 @@
         return;
       }
 
-      currentExtension = dialedExtension;
-      currentNumber = getFullNumber(dialedExtension);
-
       const matches = findDirectoryMatches(dialedExtension);
-      const matchedNameDiv = document.getElementById("matchedName");
+      currentNumber = makePhone(dialedExtension);
 
       if (matches.length > 0) {
-        matchedNameDiv.textContent = matches.map(function(item) {
+        document.getElementById("matchedName").textContent = matches.map(function(item) {
           return item.name;
         }).join(" / ");
       } else {
-        matchedNameDiv.textContent = "No phone book match found";
+        document.getElementById("matchedName").textContent = "No phone book match found";
       }
 
       document.getElementById("fullNumberDisplay").textContent = currentNumber;
       document.getElementById("resultBox").classList.remove("hidden");
 
-      callNumber(cleanPhoneNumber(currentNumber));
+      callNumber(currentNumber);
     }
 
     function callNumber(number) {
-      if (!number) {
+      const cleaned = cleanPhoneNumber(number);
+
+      if (!cleaned) {
         alert("No number available to call.");
         return;
       }
 
-      window.location.href = "tel:" + number;
-    }
-
-    function saveDirectoryEntry() {
-      const name = document.getElementById("entryName").value.trim();
-      const extension = document.getElementById("entryExtension").value.trim();
-      const fullNumber = document.getElementById("entryNumber").value.trim();
-
-      if (!name) {
-        alert("Please enter a name or unit.");
-        return;
-      }
-
-      if (!isValidExtension(extension)) {
-        alert("Please enter a valid 5-digit extension.");
-        return;
-      }
-
-      const directory = getDirectory();
-
-      const existingIndex = directory.findIndex(function(item) {
-        return item.extension === extension && item.name === name;
-      });
-
-      const entry = {
-        name: name,
-        extension: extension,
-        fullNumber: fullNumber
-      };
-
-      if (existingIndex >= 0) {
-        directory[existingIndex] = entry;
-      } else {
-        directory.push(entry);
-      }
-
-      setDirectory(directory);
-
-      document.getElementById("entryName").value = "";
-      document.getElementById("entryExtension").value = "";
-      document.getElementById("entryNumber").value = "";
-
-      renderDirectory();
-
-      alert("Directory entry saved.");
-    }
-
-    function saveCorrectionForExtension(extension, correctedNumber) {
-      const corrections = getCorrections();
-      corrections[extension] = correctedNumber;
-      setCorrections(corrections);
-      renderDirectory();
-    }
-
-    function editWrongNumber(extension) {
-      const currentFullNumber = getFullNumber(extension);
-      const correctedNumber = prompt("Enter the correct full number:", currentFullNumber);
-
-      if (!correctedNumber) {
-        return;
-      }
-
-      saveCorrectionForExtension(extension, correctedNumber.trim());
-      alert("Correction saved on this device.");
-    }
-
-    function deleteDirectoryEntry(index) {
-      const confirmDelete = confirm("Delete this directory entry?");
-
-      if (!confirmDelete) {
-        return;
-      }
-
-      const directory = getDirectory();
-      directory.splice(index, 1);
-      setDirectory(directory);
-      renderDirectory();
-    }
-
-    function loadEntryForEdit(index) {
-      const directory = getDirectory();
-      const item = directory[index];
-
-      if (!item) {
-        return;
-      }
-
-      document.getElementById("entryName").value = item.name;
-      document.getElementById("entryExtension").value = item.extension;
-      document.getElementById("entryNumber").value = item.fullNumber || "";
-
-      document.getElementById("entryName").scrollIntoView({
-        behavior: "smooth",
-        block: "center"
-      });
-    }
-
-    function toggleContactMenu(index) {
-      const menu = document.getElementById("menu-" + index);
-
-      if (!menu) {
-        return;
-      }
-
-      menu.classList.toggle("hidden");
+      window.location.href = "tel:" + cleaned;
     }
 
     function renderDirectory() {
       const search = document.getElementById("searchInput").value.toLowerCase();
-      const directory = getDirectory();
-      const corrections = getCorrections();
-
       const list = document.getElementById("directoryList");
+
       list.innerHTML = "";
 
-      let foundCount = 0;
+      const filtered = directory.filter(function(item) {
+        return (
+          item.name.toLowerCase().includes(search) ||
+          item.extension.includes(search)
+        );
+      });
 
-      directory.forEach(function(item, index) {
-        const searchableText = (
-          item.name + " " +
-          item.extension + " " +
-          (item.fullNumber || "")
-        ).toLowerCase();
+      if (filtered.length === 0) {
+        list.innerHTML = "<p class='note'>No matching phone book entries.</p>";
+        return;
+      }
 
-        if (!searchableText.includes(search)) {
-          return;
-        }
-
-        foundCount++;
-
-        const finalNumber =
-          corrections[item.extension] ||
-          item.fullNumber ||
-          formatDefaultNumber(item.extension);
-
-        const cleanNumber = cleanPhoneNumber(finalNumber);
+      filtered.forEach(function(item) {
+        const fullNumber = makePhone(item.extension);
+        const cleanNumber = cleanPhoneNumber(fullNumber);
 
         const div = document.createElement("div");
         div.className = "directory-item";
 
         div.innerHTML =
-          "<div class='contact-header'>" +
-            "<div class='contact-info'>" +
-              "<strong>" + item.name + "</strong><br>" +
-              "Extension: " + item.extension + "<br>" +
-              "Dial: <a class='phone-link' href='tel:" + cleanNumber + "'>" + finalNumber + "</a>" +
-            "</div>" +
-            "<button class='menu-button' onclick='toggleContactMenu(" + index + ")'>⋮</button>" +
-          "</div>" +
-
-          "<div id='menu-" + index + "' class='contact-menu hidden'>" +
-            "<button class='small' onclick='callNumber(\"" + cleanNumber + "\")'>Call</button>" +
-            "<button class='small secondary' onclick='editWrongNumber(\"" + item.extension + "\")'>Edit if Wrong</button>" +
-            "<button class='small secondary' onclick='loadEntryForEdit(" + index + ")'>Edit Entry</button>" +
-            "<button class='small danger' onclick='deleteDirectoryEntry(" + index + ")'>Delete</button>" +
-          "</div>";
+          "<strong>" + item.name + "</strong><br>" +
+          "Extension: " + item.extension + "<br>" +
+          "Dial: <a class='phone-link' href='tel:" + cleanNumber + "'>" + fullNumber + "</a>";
 
         list.appendChild(div);
       });
-
-      if (foundCount === 0) {
-        list.innerHTML = "<p class='note'>No matching phone book entries.</p>";
-      }
     }
 
     function showDialer() {
